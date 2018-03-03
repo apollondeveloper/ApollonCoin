@@ -3,13 +3,11 @@
 Apollon is a PoS-based cryptocurrency.
 
 ## Coin specification:
-### POW (PROOF-OF-WORK) until Block 100,000
+### POW (PROOF-OF-WORK) until Block 10,000
 Block height | Reward
 --- | ---
 2 - 500 | 250 XAP
 500 - 10,000 | 100 XAP
-10,000 - 50,000 | 50 XAP
-50,000 - 100,000 | 25 XAP
 
 ### POS (PROOF-OF-STAKE )
 Block height | Reward
