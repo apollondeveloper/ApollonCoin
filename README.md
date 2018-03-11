@@ -25,7 +25,7 @@ Block height | Reward
 
 ## Please take a look at the Wiki if you have problems setting up the wallet
 
-Stake minimum age: 12 hours
+Stake minimum age: 11 hours
 Reward: 80% MN owner, 20% staker
 
 Port: 12116
