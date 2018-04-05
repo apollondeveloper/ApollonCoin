@@ -2504,7 +2504,6 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
 
 
     // ----------- masternode payments -----------
-
     bool MasternodePayments = false;
     bool fIsInitialDownload = IsInitialBlockDownload();
 
@@ -2514,7 +2513,6 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
         if(MasternodePayments)
         {
             LOCK2(cs_main, mempool.cs);
-
             CBlockIndex *pindex = pindexBest;
             if(IsProofOfStake() && pindex != NULL){
                 if(pindex->GetBlockHash() == hashPrevBlock){
@@ -2529,26 +2527,80 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
                     bool foundPaymentAndPayee = false;
 
                     CScript payee;
+                    string targetNode;
                     CTxIn vin;
-                    if(!masternodePayments.GetBlockPayee(pindexBest->nHeight+1, payee, vin) || payee == CScript()){
-                        foundPayee = true; //doesn't require a specific payee
-                        foundPaymentAmount = true;
-                        foundPaymentAndPayee = true;
-                        if(fDebug) { LogPrintf("CheckBlock() : Using non-specific masternode payments %d\n", pindexBest->nHeight+1); }
+                    
+					CScript payeerewardaddress = CScript();
+					int payeerewardpercent = 0;
+					bool hasPayment = true;
+			
+					if(!masternodePayments.GetBlockPayee(pindexBest->nHeight+1, payee, vin)){
+						CMasternode* winningNode = mnodeman.GetCurrentMasterNode(1);
+						if(winningNode){
+							payee = GetScriptForDestination(winningNode->pubkey.GetID());
+							payeerewardaddress = winningNode->rewardAddress;
+							payeerewardpercent = winningNode->rewardPercentage;
+					   
+						// If reward percent is 0 then send all to masternode address
+						if(hasPayment && payeerewardpercent == 0){
+							CTxDestination address1;
+							ExtractDestination(payee, address1);
+							CLizuscoinAddress address2(address1);
+							targetNode = address2.ToString().c_str();	
+						}
+
+						// If reward percent is 100 then send all to reward address
+						if(hasPayment && payeerewardpercent == 100){
+							CTxDestination address1;
+							ExtractDestination(payeerewardaddress, address1);
+							CLizuscoinAddress address2(address1);
+							targetNode = address2.ToString().c_str();
+							
+						}
+
+						// If reward percent more than 0 and lower than 100 then split reward
+						if(hasPayment && payeerewardpercent > 0 && payeerewardpercent < 100){
+							CTxDestination address1;
+							ExtractDestination(payee, address1);
+							CLizuscoinAddress address2(address1);
+							
+							CTxDestination address3;
+							ExtractDestination(payeerewardaddress, address3);
+							CLizuscoinAddress address4(address3);
+							targetNode = address2.ToString().c_str();
+							
+						}
+						LogPrintf("Detected Masternode payment to %s\n", targetNode);	
+						} else {
+							LogPrintf("Cant calculate Winner, so passing.");                        
+                            foundPaymentAmount = true;
+                            foundPayee = true;
+                            foundPaymentAndPayee = true;
+                        }
                     }
 
+
                     for (unsigned int i = 0; i < vtx[1].vout.size(); i++) {
+						CTxDestination address1;
+						ExtractDestination(vtx[1].vout[i].scriptPubKey, address1);
+						CLizuscoinAddress address2(address1);                        
                         if(vtx[1].vout[i].nValue == masternodePaymentAmount )
                             foundPaymentAmount = true;
-                        if(vtx[1].vout[i].scriptPubKey == payee )
+						if(address2.ToString().c_str() == targetNode)                            
                             foundPayee = true;
-                        if(vtx[1].vout[i].nValue == masternodePaymentAmount && vtx[1].vout[i].scriptPubKey == payee)
+						if(vtx[1].vout[i].nValue == masternodePaymentAmount && address2.ToString().c_str() == targetNode)
                             foundPaymentAndPayee = true;
                     }
+
 
                     CTxDestination address1;
                     ExtractDestination(payee, address1);
                     CApolloncoinAddress address2(address1);
+					if (pindexBest->nHeight+1 < 250000) { // TODO: remove magic number; use in one place
+						foundPaymentAmount = true;
+						foundPayee = true;
+						foundPaymentAndPayee = true;
+					}
 
                     if(!foundPaymentAndPayee) {
                         if(fDebug) { LogPrintf("CheckBlock() : Couldn't find masternode payment(%d|%d) or payee(%d|%s) nHeight %d. \n", foundPaymentAmount, masternodePaymentAmount, foundPayee, address2.ToString().c_str(), pindexBest->nHeight+1); }
