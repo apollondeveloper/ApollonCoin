@@ -2545,7 +2545,7 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
 						if(hasPayment && payeerewardpercent == 0){
 							CTxDestination address1;
 							ExtractDestination(payee, address1);
-							CLizuscoinAddress address2(address1);
+							CApolloncoinAddress address2(address1);
 							targetNode = address2.ToString().c_str();	
 						}
 
@@ -2553,7 +2553,7 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
 						if(hasPayment && payeerewardpercent == 100){
 							CTxDestination address1;
 							ExtractDestination(payeerewardaddress, address1);
-							CLizuscoinAddress address2(address1);
+							CApolloncoinAddress address2(address1);
 							targetNode = address2.ToString().c_str();
 							
 						}
@@ -2562,11 +2562,11 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
 						if(hasPayment && payeerewardpercent > 0 && payeerewardpercent < 100){
 							CTxDestination address1;
 							ExtractDestination(payee, address1);
-							CLizuscoinAddress address2(address1);
+							CApolloncoinAddress address2(address1);
 							
 							CTxDestination address3;
 							ExtractDestination(payeerewardaddress, address3);
-							CLizuscoinAddress address4(address3);
+							CApolloncoinAddress address4(address3);
 							targetNode = address2.ToString().c_str();
 							
 						}
@@ -2583,7 +2583,7 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
                     for (unsigned int i = 0; i < vtx[1].vout.size(); i++) {
 						CTxDestination address1;
 						ExtractDestination(vtx[1].vout[i].scriptPubKey, address1);
-						CLizuscoinAddress address2(address1);                        
+						CApolloncoinAddress address2(address1);                        
                         if(vtx[1].vout[i].nValue == masternodePaymentAmount )
                             foundPaymentAmount = true;
 						if(address2.ToString().c_str() == targetNode)                            
