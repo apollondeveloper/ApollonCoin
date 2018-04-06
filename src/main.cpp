@@ -3601,9 +3601,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         {
             // disconnect from peers older than this proto version
             LogPrintf("partner %s using obsolete version %i; disconnecting\n", pfrom->addr.ToString(), pfrom->nVersion);
-            pfrom->fDisconnect = true;
-            LogPrintf("partner %s using obsolete version %i; banned for 24h\n", pfrom->addr.ToString(), pfrom->nVersion);
-            CNode::Ban(pfrom->addr, BanReasonNodeMisbehaving);            
+            pfrom->fDisconnect = true; 
             return false;
         }
 
