@@ -1406,9 +1406,12 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
     return pindex;
 }
 
+// Max: target readjustment, adopted from stipend fix. not sure if we are affected since we had the 
+const int targetReadjustmentForkHeight = 160000;
+
 unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
 {
-	unsigned int nTargetTemp = TARGET_SPACING;
+    unsigned int nTargetTemp = TARGET_SPACING2;
 	if (pindexLast->nTime > FORK_TIME)
 		nTargetTemp = TARGET_SPACING2;
 
@@ -1433,14 +1436,26 @@ unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfS
 
     int64_t nActualSpacing = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime();
 
-    if (nActualSpacing < 0){
-        nActualSpacing = nTargetTemp;
+    if(pindexBest->nHeight < targetReadjustmentForkHeight) {
+        if (nActualSpacing < 0){
+            nActualSpacing = nTargetTemp;
+        }
+    } else {
+        if (nActualSpacing < 0) {
+            nActualSpacing = 1;
+        }
+
+        if (nActualSpacing < nTargetTemp / 2)
+            nActualSpacing = nTargetTemp / 2;
+        if (nActualSpacing > nTargetTemp * 2)
+            nActualSpacing = nTargetTemp * 2;
     }
 
     // ppcoin: target change every block
     // ppcoin: retarget with exponential moving toward target spacing
     CBigNum bnNew;
     bnNew.SetCompact(pindexPrev->nBits);
+	 
     int64_t nInterval = nTargetTimespan / nTargetTemp;
     bnNew *= ((nInterval - 1) * nTargetTemp + nActualSpacing + nActualSpacing);
     bnNew /= ((nInterval + 1) * nTargetTemp);
