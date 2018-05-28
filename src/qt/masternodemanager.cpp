@@ -40,7 +40,6 @@ MasternodeManager::MasternodeManager(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    ui->editButton->setEnabled(false);
     ui->startButton->setEnabled(false);
 
     int columnAddressWidth = 200;
@@ -85,7 +84,6 @@ void MasternodeManager::on_tableWidget_2_itemSelectionChanged()
 {
     if(ui->tableWidget_2->selectedItems().count() > 0)
     {
-        ui->editButton->setEnabled(true);
         ui->startButton->setEnabled(true);
     }
 }
