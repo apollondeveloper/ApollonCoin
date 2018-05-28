@@ -2519,123 +2519,83 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
 
 
     // ----------- masternode payments -----------
-    bool MasternodePayments = false;
     bool fIsInitialDownload = IsInitialBlockDownload();
 
-    if(nTime > START_MASTERNODE_PAYMENTS) MasternodePayments = true;
     if (!fIsInitialDownload)
     {
-        if(MasternodePayments)
-        {
-            LOCK2(cs_main, mempool.cs);
-            CBlockIndex *pindex = pindexBest;
-            if(IsProofOfStake() && pindex != NULL){
-                if(pindex->GetBlockHash() == hashPrevBlock){
-                    // If we don't already have its previous block, skip masternode payment step
-                    CAmount masternodePaymentAmount;
-                    for (int i = vtx[1].vout.size(); i--> 0; ) {
-                        masternodePaymentAmount = vtx[1].vout[i].nValue;
-                        break;
-                    }
-                    bool foundPaymentAmount = false;
-                    bool foundPayee = false;
-                    bool foundPaymentAndPayee = false;
+        LOCK2(cs_main, mempool.cs);
 
-                    CScript payee;
-                    string targetNode;
-                    CTxIn vin;
-                    
-					CScript payeerewardaddress = CScript();
-					int payeerewardpercent = 0;
-					bool hasPayment = true;
-			
-					if(!masternodePayments.GetBlockPayee(pindexBest->nHeight+1, payee, vin)){
-						CMasternode* winningNode = mnodeman.GetCurrentMasterNode(1);
-						if(winningNode){
-							payee = GetScriptForDestination(winningNode->pubkey.GetID());
-							payeerewardaddress = winningNode->rewardAddress;
-							payeerewardpercent = winningNode->rewardPercentage;
-					   
-						// If reward percent is 0 then send all to masternode address
-						if(hasPayment && payeerewardpercent == 0){
-							CTxDestination address1;
-							ExtractDestination(payee, address1);
-							CApolloncoinAddress address2(address1);
-							targetNode = address2.ToString().c_str();	
-						}
+        CBlockIndex *pindex = pindexBest;
+        if(IsProofOfStake() && pindex != NULL){
+            if(pindex->GetBlockHash() == hashPrevBlock){
+                // If we don't already have its previous block, skip masternode payment step
+                CAmount masternodePaymentAmount;
+                for (int i = vtx[1].vout.size(); i--> 0; ) {
+                    masternodePaymentAmount = vtx[1].vout[i].nValue;
+                    break;
+                }
+                bool foundPaymentAmount = false;
+                bool foundPayee = false;
+                bool foundPaymentAndPayee = false;
 
-						// If reward percent is 100 then send all to reward address
-						if(hasPayment && payeerewardpercent == 100){
-							CTxDestination address1;
-							ExtractDestination(payeerewardaddress, address1);
-							CApolloncoinAddress address2(address1);
-							targetNode = address2.ToString().c_str();
-							
-						}
+                CScript payee;
+                CTxIn vin;
+                if(!masternodePayments.GetBlockPayee(pindexBest->nHeight+1, payee, vin)) {
+                    foundPayee = true;
+                    foundPaymentAmount = true;
+                    foundPaymentAndPayee = true;
+                    LogPrintf("CheckBlock() : Using non-specific masternode payments %d\n", pindexBest->nHeight+1);
+                }
 
-						// If reward percent more than 0 and lower than 100 then split reward
-						if(hasPayment && payeerewardpercent > 0 && payeerewardpercent < 100){
-							CTxDestination address1;
-							ExtractDestination(payee, address1);
-							CApolloncoinAddress address2(address1);
-							
-							CTxDestination address3;
-							ExtractDestination(payeerewardaddress, address3);
-							CApolloncoinAddress address4(address3);
-							targetNode = address2.ToString().c_str();
-							
-						}
-						LogPrintf("Detected Masternode payment to %s\n", targetNode);	
-						} else {
-							LogPrintf("Cant calculate Winner, so passing.");                        
-                            foundPaymentAmount = true;
-                            foundPayee = true;
-                            foundPaymentAndPayee = true;
+                for (unsigned int i = 0; i < vtx[1].vout.size(); i++) {
+                    if(vtx[1].vout[i].nValue == masternodePaymentAmount )
+                        foundPaymentAmount = true;
+                    if(vtx[1].vout[i].scriptPubKey == payee )
+                        foundPayee = true;
+                    if(vtx[1].vout[i].nValue == masternodePaymentAmount && vtx[1].vout[i].scriptPubKey == payee)
+                        foundPaymentAndPayee = true;
+                }
+
+                CTxDestination address1;
+                ExtractDestination(payee, address1);
+                CApolloncoinAddress address2(address1);
+
+                if (nBestHeight >= 210000) {
+
+                    CScript winner;
+                    CMasternode* winningNode = mnodeman.GetCurrentMasterNode(1);
+                    if (winningNode) {
+                        winner = GetScriptForDestination(winningNode->pubkey.GetID());
+
+                        CTxDestination address3;
+                        ExtractDestination(winner, address3);
+                        CApolloncoinAddress address4(address3);
+
+                        if (address2.ToString() != address4.ToString()) {
+                            LogPrintf("CheckBlock() : Incorrect winner, rejecting the block.");
+                            return DoS(100, error("CheckBlock() : Masternode payment incorrect, rejecting block"));
                         }
-                    }
-
-
-                    for (unsigned int i = 0; i < vtx[1].vout.size(); i++) {
-						CTxDestination address1;
-						ExtractDestination(vtx[1].vout[i].scriptPubKey, address1);
-						CApolloncoinAddress address2(address1);                        
-                        if(vtx[1].vout[i].nValue == masternodePaymentAmount )
-                            foundPaymentAmount = true;
-						if(address2.ToString().c_str() == targetNode)                            
-                            foundPayee = true;
-						if(vtx[1].vout[i].nValue == masternodePaymentAmount && address2.ToString().c_str() == targetNode)
-                            foundPaymentAndPayee = true;
-                    }
-
-
-                    CTxDestination address1;
-                    ExtractDestination(payee, address1);
-                    CApolloncoinAddress address2(address1);
-					if (pindexBest->nHeight+1 < 250000) { // TODO: remove magic number; use in one place
-						foundPaymentAmount = true;
-						foundPayee = true;
-						foundPaymentAndPayee = true;
-					}
-
-                    if(!foundPaymentAndPayee) {
-                        if(fDebug) { LogPrintf("CheckBlock() : Couldn't find masternode payment(%d|%d) or payee(%d|%s) nHeight %d. \n", foundPaymentAmount, masternodePaymentAmount, foundPayee, address2.ToString().c_str(), pindexBest->nHeight+1); }
-                        return DoS(100, error("CheckBlock() : Couldn't find masternode payment or payee"));
                     } else {
-                        LogPrintf("CheckBlock() : Found payment(%d|%d) or payee(%d|%s) nHeight %d. \n", foundPaymentAmount, masternodePaymentAmount, foundPayee, address2.ToString().c_str(), pindexBest->nHeight+1);
+                        LogPrintf("CheckBlock() : No masternode winner found");
+                        return DoS(100, error("CheckBlock() : Couldn't find masternode winner"));
                     }
+                }
+
+                if(!foundPaymentAndPayee) {
+                    if(fDebug) { LogPrintf("CheckBlock() : Couldn't find masternode payment(%d|%d) or payee(%d|%s) nHeight %d. \n", foundPaymentAmount, masternodePaymentAmount, foundPayee, address2.ToString().c_str(), pindexBest->nHeight+1); }
+                    return DoS(100, error("CheckBlock() : Couldn't find masternode payment or payee"));
                 } else {
-                    if(fDebug) { LogPrintf("CheckBlock() : Skipping masternode payment check - nHeight %d Hash %s\n", pindexBest->nHeight+1, GetHash().ToString().c_str()); }
+                    LogPrintf("CheckBlock() : Found payment(%d|%d) or payee(%d|%s) nHeight %d. \n", foundPaymentAmount, masternodePaymentAmount, foundPayee, address2.ToString().c_str(), pindexBest->nHeight+1);
                 }
             } else {
-                if(fDebug) { LogPrintf("CheckBlock() : pindex is null, skipping masternode payment check\n"); }
+                if(fDebug) { LogPrintf("CheckBlock() : Skipping masternode payment check - nHeight %d Hash %s\n", pindexBest->nHeight+1, GetHash().ToString().c_str()); }
             }
         } else {
-            if(fDebug) { LogPrintf("CheckBlock() : skipping masternode payment checks\n"); }
+            if(fDebug) { LogPrintf("CheckBlock() : pindex is null, skipping masternode payment check\n"); }
         }
     } else {
         if(fDebug) { LogPrintf("CheckBlock() : Is initial download, skipping masternode payment check %d\n", pindexBest->nHeight+1); }
     }
-
 
 
     // Check transactions
@@ -3612,11 +3572,11 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         CAddress addrFrom;
         uint64_t nNonce = 1;
         vRecv >> pfrom->nVersion >> pfrom->nServices >> nTime >> addrMe;
-        if (nBestHeight >= 70000 && pfrom->nVersion < MIN_PEER_PROTO_VERSION)
+        if ((pfrom->nVersion < MIN_PEER_PROTO_VERSION) || (nBestHeight >= JUNE_2018_FORK_BLOCK && pfrom->nVersion < MIN_PEER_PROTO_VERSION_FORK1))
         {
             // disconnect from peers older than this proto version
             LogPrintf("partner %s using obsolete version %i; disconnecting\n", pfrom->addr.ToString(), pfrom->nVersion);
-            pfrom->fDisconnect = true; 
+            pfrom->fDisconnect = true;
             return false;
         }
 
