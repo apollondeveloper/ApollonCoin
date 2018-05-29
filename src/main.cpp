@@ -2548,6 +2548,7 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
                 }
 
                 for (unsigned int i = 0; i < vtx[1].vout.size(); i++) {
+                    payee = vtx[1].vout[i].scriptPubKey;
                     if(vtx[1].vout[i].nValue == masternodePaymentAmount )
                         foundPaymentAmount = true;
                     if(vtx[1].vout[i].scriptPubKey == payee )
@@ -2570,13 +2571,16 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
                         CTxDestination address3;
                         ExtractDestination(winner, address3);
                         CApolloncoinAddress address4(address3);
-
-                        if (address2.ToString() != address4.ToString()) {
-                            LogPrintf("CheckBlock() : Incorrect winner, rejecting the block.");
+        
+                        CTxDestination winnerRewardAddr;
+                        ExtractDestination(winningNode->rewardAddress, winnerRewardAddr);
+                        CApolloncoinAddress winnerRewardAddr2(winnerRewardAddr);
+                        
+                        
+                        if (address2.ToString() != address4.ToString() && address2.ToString() != winnerRewardAddr2.ToString() ) {
                             return DoS(100, error("CheckBlock() : Masternode payment incorrect, rejecting block"));
                         }
                     } else {
-                        LogPrintf("CheckBlock() : No masternode winner found");
                         return DoS(100, error("CheckBlock() : Couldn't find masternode winner"));
                     }
                 }
