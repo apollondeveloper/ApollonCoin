@@ -65,26 +65,6 @@ SendCoinsDialog::SendCoinsDialog(QWidget *parent) :
     if (!settings.contains("bUseInstantX"))
         settings.setValue("bUseInstantX", false);
 
-    bool useDarkSend = settings.value("bUseDarkSend").toBool();
-    bool useInstantX = settings.value("bUseInstantX").toBool();
-
-    if(fLiteMode) {
-        ui->checkUseDarksend->setChecked(false);
-        ui->checkUseDarksend->setVisible(false);
-        ui->checkInstantX->setVisible(false);
-        CoinControlDialog::coinControl->useDarkSend = false;
-        CoinControlDialog::coinControl->useInstantX = false;
-    }
-    else{
-        ui->checkUseDarksend->setChecked(useDarkSend);
-        ui->checkInstantX->setChecked(useInstantX);
-        CoinControlDialog::coinControl->useDarkSend = useDarkSend;
-        CoinControlDialog::coinControl->useInstantX = useInstantX;
-    }
-
-    connect(ui->checkUseDarksend, SIGNAL(stateChanged ( int )), this, SLOT(updateDisplayUnit()));
-    connect(ui->checkInstantX, SIGNAL(stateChanged ( int )), this, SLOT(updateInstantX()));
-
     // Coin Control: clipboard actions
     QAction *clipboardQuantityAction = new QAction(tr("Copy quantity"), this);
     QAction *clipboardAmountAction = new QAction(tr("Copy amount"), this);
@@ -253,27 +233,10 @@ void SendCoinsDialog::on_sendButton_clicked()
     QString strFee = "";
     recipients[0].inputType = ONLY_DENOMINATED;
 
-    if(ui->checkUseDarksend->isChecked()) {
-        recipients[0].inputType = ONLY_DENOMINATED;
-        strFunds = tr("using") + " <b>" + tr("anonymous funds") + "</b>";
-        QString strNearestAmount(
-            BitcoinUnits::formatWithUnit(
-                model->getOptionsModel()->getDisplayUnit(), 0.1 * COIN));
-        strFee = QString(tr(
-            "(darksend requires this amount to be rounded up to the nearest %1)."
-        ).arg(strNearestAmount));
-    } else {
-        recipients[0].inputType = ALL_COINS;
-        strFunds = tr("using") + " <b>" + tr("any available funds (not recommended)") + "</b>";
-    }
+    recipients[0].inputType = ALL_COINS;
+    strFunds = tr("using") + " <b>" + tr("any available funds (not recommended)") + "</b>";
 
-    if(ui->checkInstantX->isChecked()) {
-        recipients[0].useInstantX = true;
-        strFunds += " ";
-        strFunds += tr("and InstantX");
-    } else {
-        recipients[0].useInstantX = false;
-    }
+    recipients[0].useInstantX = false;
 
     // Format confirmation message
     QStringList formatted;
@@ -563,13 +526,9 @@ void SendCoinsDialog::setBalance(const CAmount& balance, const CAmount& stake, c
     {
         uint64_t bal = 0;
         QSettings settings;
-        settings.setValue("bUseDarkSend", ui->checkUseDarksend->isChecked());
-        if(ui->checkUseDarksend->isChecked()) {
-        bal = anonymizedBalance;
-        } else {
+        settings.setValue("bUseDarkSend", false);
         bal = balance;
-        }
-
+        
         ui->labelBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), bal));
     }
 }
@@ -580,15 +539,15 @@ void SendCoinsDialog::updateDisplayUnit()
     if(!lockMain) return;
     setBalance(model->getBalance(), model->getStake(), model->getUnconfirmedBalance(), model->getImmatureBalance(), model->getAnonymizedBalance(),
     	model->getWatchBalance(), model->getWatchStake(), model->getWatchUnconfirmedBalance(), model->getWatchImmatureBalance());
-    CoinControlDialog::coinControl->useDarkSend = ui->checkUseDarksend->isChecked();
+    CoinControlDialog::coinControl->useDarkSend = false;
     coinControlUpdateLabels();
 }
 
 void SendCoinsDialog::updateInstantX()
 {
     QSettings settings;
-    settings.setValue("bUseInstantX", ui->checkInstantX->isChecked());
-    CoinControlDialog::coinControl->useInstantX = ui->checkInstantX->isChecked();
+    settings.setValue("bUseInstantX", false);
+    CoinControlDialog::coinControl->useInstantX = false;
     coinControlUpdateLabels();
 }
 
@@ -897,8 +856,6 @@ void SendCoinsDialog::coinControlUpdateLabels()
         if(entry)
             CoinControlDialog::payAmounts.append(entry->getValue().amount);
     }
-
-    ui->checkUseDarksend->setChecked(CoinControlDialog::coinControl->useDarkSend);
 
     if (CoinControlDialog::coinControl->HasSelected())
     {
