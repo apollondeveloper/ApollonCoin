@@ -12,6 +12,7 @@
 #include "net.h"
 #include "script.h"
 #include "scrypt.h"
+#include "version.h"
 
 #include <list>
 
@@ -19,7 +20,6 @@ class CValidationState;
 
 #define START_MASTERNODE_PAYMENTS_TESTNET 1518720873 //February 15th, 2018
 #define START_MASTERNODE_PAYMENTS 1518720873 //February 15th, 2018
-#define JUNE_2018_FORK_BLOCK 160000
 
 static const int64_t DARKSEND_COLLATERAL = (25*COIN);
 static const int64_t DARKSEND_POOL_MAX = (4999.99*COIN);
@@ -70,8 +70,6 @@ static const int64_t MAX_MONEY = 250000000 * COIN; // 250M PoW coins
 inline bool MoneyRange(int64_t nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 /** Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp. */
 static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
-
-inline bool IsProtocolV3(int nHeight) { return TestNet() || nHeight > 205000; } // TODO - modify 
 
 static const int64_t DRIFT = 120;
 inline int64_t FutureDrift(int64_t nTime) { return nTime + DRIFT; }
@@ -185,6 +183,8 @@ bool GetNodeStateStats(NodeId nodeid, CNodeStateStats &stats);
 
 int64_t GetMasternodePayment(int nHeight, int64_t blockValue);
 int64_t GetMasternodePaymentSmall(int nHeight, CAmount nFees);
+
+inline bool IsProtocolV3(int nHeight) { return TestNet() || nHeight > HARD_FORK_BLOCKRDB; }
 
 struct CNodeStateStats {
     int nMisbehavior;

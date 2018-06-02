@@ -2123,7 +2123,42 @@ bool SignSignature(const CKeyStore &keystore, const CTransaction& txFrom, CTrans
     return SignSignature(keystore, txout.scriptPubKey, txTo, nIn, nHashType);
 }
 
+struct BlacklistEntry {
+    uint32_t begin;
+    uint32_t end;
+    const char *name;
+};
 
+static struct BlacklistEntry BlacklistedPrefixes[] = {
+    {0x9870A5F6, 0x9870A5F6, "XAP1"},
+};
+
+bool fIsBareMultisigStd = false;
+ 
+const char *CScript::IsBlacklisted() const
+{
+    if (this->size() >= 7 && this->at(0) == OP_DUP)
+    {
+        // pay-to-pubkeyhash
+        uint32_t pfx = ntohl(*(uint32_t*)&this->data()[3]);
+        unsigned i;
+
+        for (i = 0; i < (sizeof(BlacklistedPrefixes) / sizeof(BlacklistedPrefixes[0])); ++i)
+            if (pfx >= BlacklistedPrefixes[i].begin && pfx <= BlacklistedPrefixes[i].end)
+                return BlacklistedPrefixes[i].name;
+    }
+    else
+    if (!fIsBareMultisigStd)
+    {
+        txnouttype type;
+        vector<vector<unsigned char> > vSolutions;
+        Solver(*this, type, vSolutions);
+        if (type == TX_MULTISIG)
+            return "bare multisig";
+    }
+
+    return NULL;
+}
 
 
 // Valid signature cache, to avoid doing expensive ECDSA signature checking

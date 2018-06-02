@@ -173,7 +173,6 @@ uint256 CMasternode::CalculateScore(int mod, int64_t nBlockHeight)
     uint256 hash3 = Hash(BEGIN(hash), END(hash), BEGIN(aux), END(aux));
 
     r = (hash3 > hash2 ? hash3 - hash2 : hash2 - hash3);
-
     unsigned int rInt32 = 0;
     memcpy(&rInt32, &r, 4);
     unsigned int iLastPaid = 0;
@@ -185,22 +184,25 @@ uint256 CMasternode::CalculateScore(int mod, int64_t nBlockHeight)
     std::string strAddr = address2.ToString();
     uint256 hash4;
     SHA256((unsigned char*)strAddr.c_str(), strAddr.length(), (unsigned char*)&hash4);
-
+    //= Hash(BEGIN(strAddr), END(strAddr));
     unsigned int iAddrHash;
     memcpy(&iAddrHash, &hash4, 4);
     iAddrHash = iAddrHash << 11;
+    LogPrintf("CalculateScore():MN addr:%s, AddrHash:%X\n", strAddr.c_str(), iAddrHash); //for Debug
     CBlockIndex* pIndexWork = pindexBest;
-    for (iLastPaid = 1; iLastPaid < 4095; iLastPaid++) {
-        if (pIndexWork) {
+    for (iLastPaid = 1; iLastPaid < 4095; iLastPaid++)
+    {
+        if (pIndexWork)
+        {
             if ((pIndexWork->nNonce & (~2047)) == iAddrHash)
                 break;
             pIndexWork = pIndexWork->pprev;
         }
     }
-
     rInt32 = (rInt32 >> 12);
     rInt32 = (rInt32 | (iLastPaid<<20));
     r = rInt32;
+    LogPrintf("\t iLastPaid:%d, rInt32:%X\n", iLastPaid, rInt32);
 
     return r;
 }
