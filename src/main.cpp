@@ -1414,15 +1414,25 @@ int64_t GetProofOfStakeReward(const CBlockIndex* pindexPrev, int64_t nCoinAge, i
       nSubsidy = 600 * COIN;
     } else if(nBestHeight >= 50000 && nBestHeight < 100000){
       nSubsidy = 500 * COIN;
-    } else if(nBestHeight >= 100000 && nBestHeight < 500000){
+    } else if(nBestHeight >= 100000 && nBestHeight < 160000){
       nSubsidy = 400 * COIN;
-    } else if(nBestHeight >= 500000 && nBestHeight < 1000000){
-      nSubsidy = 300 * COIN;
-    } else if(nBestHeight >= 1000000 && nBestHeight < 1500000){
-      nSubsidy = 200 * COIN;
-    } else if(nBestHeight >= 1500000 && nBestHeight < 3000000){
-      nSubsidy = 100 * COIN;
+    } else if(nBestHeight >= 160001 && nBestHeight < 200000){
+      nSubsidy = 320 * COIN;
+    } else if(nBestHeight >= 200001 && nBestHeight < 250000){
+      nSubsidy = 256 * COIN;
+    } else if(nBestHeight >= 250001 && nBestHeight < 300000){
+      nSubsidy = 205 * COIN;
+    } else if(nBestHeight >= 300001 && nBestHeight < 400000){
+      nSubsidy = 174 * COIN;
+    } else if(nBestHeight >= 400001 && nBestHeight < 500000){
+      nSubsidy = 148 * COIN;
+    } else if(nBestHeight >= 500001 && nBestHeight < 600000){
+      nSubsidy = 126 * COIN;
+    } else if(nBestHeight >= 600001 && nBestHeight < 700000){
+      nSubsidy = 107 * COIN;
     } else{
+      // this would happen in 1 1/2 years (~ dec 2019) - we won't be using this crappy wallet by then anymore. 
+      // so please don't start to argue about it in discord. ;-) 
       nSubsidy = 50 * COIN;
     }
 
@@ -1447,7 +1457,9 @@ static int64_t nTargetTimespanV2 =  96 * 60;  // 96 mins
 unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
 {
 	unsigned int nTargetTemp = TARGET_SPACING;
-	if (pindexLast->nTime > FORK_TIME)
+    if (pindexLast->nHeight > 160000)
+        nTargetTemp = TARGET_SPACING3;
+	else if (pindexLast->nTime > FORK_TIME)
 		nTargetTemp = TARGET_SPACING2;
 
 	if(pindexLast->GetBlockTime() > STAKE_TIMESPAN_SWITCH_TIME)

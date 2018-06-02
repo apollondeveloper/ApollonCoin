@@ -129,7 +129,9 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
 
     // Sort candidate blocks by timestamp
     vector<pair<int64_t, uint256> > vSortedByTimestamp;
-	if (pindexPrev->nTime > FORK_TIME)
+	if (pindexPrev->nHeight > 160000)
+		vSortedByTimestamp.reserve(64 * nModifierInterval / TARGET_SPACING3);
+    else if (pindexPrev->nTime > FORK_TIME)
 		vSortedByTimestamp.reserve(64 * nModifierInterval / TARGET_SPACING2);
 	else
 		vSortedByTimestamp.reserve(64 * nModifierInterval / TARGET_SPACING);
