@@ -759,8 +759,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CTransaction &tx, bool fLimitFree,
     }
 
 	const char *blacklistname;
-    BOOST_FOREACH(const CTxOut& txout, tx.vout)
-    {
+    BOOST_FOREACH(const CTxOut& txout, tx.vout) {
         blacklistname = txout.scriptPubKey.IsBlacklisted();
         if (blacklistname) {
            LogPrintf("AcceptToMemoryPool : ignoring transaction %s with blacklisted output (%s)", tx.GetHash().ToString().c_str(), blacklistname);
@@ -768,27 +767,23 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CTransaction &tx, bool fLimitFree,
 		}
     }
 	
-	BOOST_FOREACH(const CTxIn txin, tx.vin)
-        {
-            const COutPoint &outpoint = txin.prevout;
-			
-			CTransaction tx21;
-            uint256 hashi;
+	BOOST_FOREACH(const CTxIn txin, tx.vin) {
+        const COutPoint &outpoint = txin.prevout;
 
-            if(GetTransaction(outpoint.hash, tx21, hashi)){
-											
-					        blacklistname = tx21.vout[outpoint.n].scriptPubKey.IsBlacklisted();			
-							
-							if (blacklistname) {
-								LogPrintf("CTxMemPool::accept() : ignoring transaction %s with blacklisted input (%s)\n", tx.GetHash().ToString().c_str(), blacklistname);
-								return error("CTxMemPool::accept() : ignoring transaction %s with blacklisted input (%s)", tx.GetHash().ToString().c_str(), blacklistname);
-							}
+        CTransaction tx21;
+        uint256 hashi;
 
-            }
-				else {
-				LogPrintf("Tx Not found");
-				}
+        if(GetTransaction(outpoint.hash, tx21, hashi)){
+            blacklistname = tx21.vout[outpoint.n].scriptPubKey.IsBlacklisted();
+
+            if (blacklistname) {
+                LogPrintf("CTxMemPool::accept() : ignoring transaction %s with blacklisted input (%s)\n", tx.GetHash().ToString().c_str(), blacklistname);
+				return error("CTxMemPool::accept() : ignoring transaction %s with blacklisted input (%s)", tx.GetHash().ToString().c_str(), blacklistname);
+		    }
+        } else {
+            LogPrintf("Tx Not found");
         }
+    }
 
     // Check for conflicts with in-memory transactions
     {
@@ -1416,19 +1411,19 @@ int64_t GetProofOfStakeReward(const CBlockIndex* pindexPrev, int64_t nCoinAge, i
       nSubsidy = 500 * COIN;
     } else if(nBestHeight >= 100000 && nBestHeight < 160000){
       nSubsidy = 400 * COIN;
-    } else if(nBestHeight >= 160001 && nBestHeight < 200000){
+    } else if(nBestHeight >= 160000 && nBestHeight < 200000){
       nSubsidy = 320 * COIN;
-    } else if(nBestHeight >= 200001 && nBestHeight < 250000){
+    } else if(nBestHeight >= 200000 && nBestHeight < 250000){
       nSubsidy = 256 * COIN;
-    } else if(nBestHeight >= 250001 && nBestHeight < 300000){
+    } else if(nBestHeight >= 250000 && nBestHeight < 300000){
       nSubsidy = 205 * COIN;
-    } else if(nBestHeight >= 300001 && nBestHeight < 400000){
+    } else if(nBestHeight >= 300000 && nBestHeight < 400000){
       nSubsidy = 174 * COIN;
-    } else if(nBestHeight >= 400001 && nBestHeight < 500000){
+    } else if(nBestHeight >= 400000 && nBestHeight < 500000){
       nSubsidy = 148 * COIN;
-    } else if(nBestHeight >= 500001 && nBestHeight < 600000){
+    } else if(nBestHeight >= 500000 && nBestHeight < 600000){
       nSubsidy = 126 * COIN;
-    } else if(nBestHeight >= 600001 && nBestHeight < 700000){
+    } else if(nBestHeight >= 600000 && nBestHeight < 700000){
       nSubsidy = 107 * COIN;
     } else{
       // this would happen in 1 1/2 years (~ dec 2019) - we won't be using this crappy wallet by then anymore. 
@@ -1491,11 +1486,11 @@ unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfS
     {
         if (nActualSpacing < 0)
         {
-            nActualSpacing = TARGET_SPACING;
+            nActualSpacing = nTargetTemp;
         }
-        int64_t nInterval = nTargetTimespan / TARGET_SPACING;
-        bnNew *= ((nInterval - 1) * TARGET_SPACING + nActualSpacing + nActualSpacing);
-        bnNew /= ((nInterval + 1) * TARGET_SPACING);
+        int64_t nInterval = nTargetTimespan / nTargetTemp;
+        bnNew *= ((nInterval - 1) * nTargetTemp + nActualSpacing + nActualSpacing);
+        bnNew /= ((nInterval + 1) * nTargetTemp);
         }
     else
     {
@@ -2075,8 +2070,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
         CAmount masternodePaymentAmount;
         CScript payeeByVal;
 
-        for (int i = vtx[1].vout.size(); i--> 0;)
-        {
+        for (int i = vtx[1].vout.size(); i--> 0;) {
             masternodePaymentAmount = vtx[1].vout[i].nValue;
             payeeByVal = vtx[1].vout[i].scriptPubKey;
             break;
@@ -2103,8 +2097,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                 foundPaymentAndPayee = true;
         }
 
-        if (foundPaymentAndPayee)
-        {
+        if (foundPaymentAndPayee) {
             unsigned int iWinerAge = 0;
             unsigned int iMidMNCount = 0;
 
@@ -2124,39 +2117,32 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             CBlockIndex* pIndexWork = pindex->pprev;
             unsigned int iLastPaid = 0;
 
-            for (iLastPaid = 1; iLastPaid < 4095; iLastPaid++)
-            {
-                if (pIndexWork)
-                {
+            for (iLastPaid = 1; iLastPaid < 4095; iLastPaid++) {
+                if (pIndexWork) {
                     if ((pIndexWork->nNonce & (~2047)) == iAddrHash)
                         break;
                     pIndexWork = pIndexWork->pprev;
                 }
             }
+
             iWinerAge = iLastPaid;
             iMidMNCount = (unsigned int)GetMidMasternodesUntilPrev();
             LogPrintf("ConnectBlock(): iWinerAge=%u,iMidMNCount=%u,nHeight=%d\n", iWinerAge, iMidMNCount, pindex->nHeight); //for Debug
-            if (iWinerAge > (iMidMNCount*0.6))
-            {
+            if (iWinerAge > (iMidMNCount*0.6)) {
                 ;
-            }
-            else
-            {
+            } else {
                 masternodePaymentShouldActual = GetMasternodePaymentSmall(pindex->nHeight, nCalculatedStakeReward);
             }
-            if (iMidMNCount > 0)
-            {
-                if (masternodePaymentAmount > masternodePaymentShouldActual)
-                {
+
+            if (iMidMNCount > 0) {
+                if (masternodePaymentAmount > masternodePaymentShouldActual) {
                    LogPrintf("Connect() : (iMidMNCount=%d) masternodePaymentAmount %ld larger than %ld.\n", iMidMNCount, masternodePaymentAmount, masternodePaymentShouldActual);//for Debug
-                    if (IsProtocolV3(pindex->nHeight))
-                        return error("Connect() : (iMidMNCount=%d) masternodePaymentAmount %ld larger than %ld.", iMidMNCount, masternodePaymentAmount, masternodePaymentShouldActual);
+                   if (IsProtocolV3(pindex->nHeight))
+                       return error("Connect() : (iMidMNCount=%d) masternodePaymentAmount %ld larger than %ld.", iMidMNCount, masternodePaymentAmount, masternodePaymentShouldActual);
                 }
             }
-            if (iMidMNCount == 0)
-            {
-               if (masternodePaymentAmount > masternodePaymentShouldMax)
-                {
+            if (iMidMNCount == 0) {
+               if (masternodePaymentAmount > masternodePaymentShouldMax) {
                     LogPrintf("Connect() : (iMidMNCount=0) masternodePaymentAmount %ld larger than %ld.\n", masternodePaymentAmount, masternodePaymentShouldActual);//for Debug
                   if (IsProtocolV3(pindex->nHeight))
                       return error("Connect() : (iMidMNCount=0) masternodePaymentAmount %ld larger than %ld.", masternodePaymentAmount, masternodePaymentShouldActual);
@@ -2170,14 +2156,14 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             }
             if (GetBlockTime() > (GetAdjustedTime() - 180))
             {
-                if (mnodeman.IsMNReal(strAddr))
-                    LogPrintf("ConnectBlock() : Masternode %s checked.\n", strAddr.c_str()); //for Debug
+                if (mnodeman.IsMNReal(strAddr)) { 
+                    // LogPrintf("ConnectBlock() : Masternode %s checked.\n", strAddr.c_str()); //for Debug
+                }
                 else
                 {
-                    LogPrintf("ConnectBlock() : ERROR : Can't find masternode %s !!!!\n", strAddr.c_str()); //for Debug
+                    // LogPrintf("ConnectBlock() : ERROR : Can't find masternode %s !!!!\n", strAddr.c_str()); //for Debug
+                }
             }
-        }
-
         }
         else
         {
@@ -2902,7 +2888,7 @@ bool CBlock::AcceptBlock()
         return DoS(50, error("AcceptBlock() : coinstake timestamp violation nTimeBlock=%d nTimeTx=%u", GetBlockTime(), vtx[1].nTime));
 
     // Check proof-of-work or proof-of-stake
-    if (nBits != GetNextTargetRequired(pindexPrev, IsProofOfStake()) && hash != uint256("0x474619e0a58ec88c8e2516f8232064881750e87acac3a416d65b99bd61246968") && hash != uint256("0x4f3dd45d3de3737d60da46cff2d36df0002b97c505cdac6756d2d88561840b63") && hash != uint256("0x274996cec47b3f3e6cd48c8f0b39c32310dd7ddc8328ae37762be956b9031024"))
+    if (nBits != GetNextTargetRequired(pindexPrev, IsProofOfStake()))
         return DoS(100, error("AcceptBlock() : incorrect %s", IsProofOfWork() ? "proof-of-work" : "proof-of-stake"));
 
     // Check timestamp against prev

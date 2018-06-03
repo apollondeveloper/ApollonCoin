@@ -1155,7 +1155,7 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, std::string& strCommand, CData
 
         // ask for the dsee info once from the node that sent dseep
 
-        LogPrintf("dseep - Asking source node for missing entry %s\n", vin.ToString().c_str());
+        // LogPrintf("dseep - Asking source node for missing entry %s\n", vin.ToString().c_str());
         pfrom->PushMessage("dseg", vin);
         int64_t askAgain = GetTime()+ MASTERNODE_MIN_DSEEP_SECONDS;
         mWeAskedForMasternodeListEntry[vin.prevout] = askAgain;
