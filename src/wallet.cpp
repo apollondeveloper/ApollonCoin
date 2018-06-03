@@ -22,6 +22,7 @@
 #include "masternode-payments.h"
 #include "chainparams.h"
 #include "smessage.h"
+#include "miner.h"
 
 #include <boost/algorithm/string/replace.hpp>
 
@@ -3338,7 +3339,7 @@ uint64_t CWallet::GetStakeWeight() const
     return nWeight;
 }
 
-bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int64_t nSearchInterval, int64_t nFees, CTransaction& txNew, CKey& key)
+bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int64_t nSearchInterval, int64_t nFees, CTransaction& txNew, CKey& key, unsigned int* nNonceBlock)
 {
     CBlockIndex* pindexPrev = pindexBest;
     CBigNum bnTargetPerCoinDay;
@@ -3503,36 +3504,67 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     // start masternode payments
     bool bMasterNodePayment = true; // note was false, set true to test
 
-    if ( Params().NetworkID() == CChainParams::TESTNET ){
-        if (GetTime() > START_MASTERNODE_PAYMENTS_TESTNET ){
-            bMasterNodePayment = true;
-        }
-    }else{
-        if (GetTime() > START_MASTERNODE_PAYMENTS){
-            bMasterNodePayment = true;
-        }
-    }
-
     CScript payee;
     CScript payeerewardaddress = CScript();
     int payeerewardpercent = 0;
     CTxIn vin;
-    bool hasPayment = true;
+    int64_t masternodePayment = GetMasternodePayment(pindexPrev->nHeight + 1, nReward);
     if(bMasterNodePayment) {
         //spork
         if(!masternodePayments.GetBlockPayee(pindexPrev->nHeight+1, payee, vin)){
             CMasternode* winningNode = mnodeman.GetCurrentMasterNode(1);
-            if(winningNode){
-                payee = GetScriptForDestination(winningNode->pubkey.GetID());
+            if(winningNode)
+            {
+                CScript pubkeyWork;
+                pubkeyWork.SetDestination(winningNode->pubkey.GetID());
                 payeerewardaddress = winningNode->rewardAddress;
                 payeerewardpercent = winningNode->rewardPercentage;
+                CTxDestination address1;
+                ExtractDestination(pubkeyWork, address1);
+                CApolloncoinAddress address2(address1);
+                std::string strAddr = address2.ToString();
+                uint256 hash4;
+                SHA256((unsigned char*)strAddr.c_str(), strAddr.length(), (unsigned char*)&hash4);
+                unsigned int iAddrHash;
+                memcpy(&iAddrHash, &hash4, 4);
+                iAddrHash = iAddrHash << 11;
+                unsigned int iCurrentMNs = mnodeman.GetMasternodeCount();
+                if (iCurrentMNs > 2047)
+                    iCurrentMNs = 2047;
+                *nNonceBlock = (iAddrHash | iCurrentMNs);
+                // fprintf(stderr, "CreateCoinStake():MN addr:%s, AddrHash:%X, nNonceBlock&~2047:%X, nNonceBlock:%X\n", strAddr.c_str(), iAddrHash, (*nNonceBlock & (~2047)), *nNonceBlock); //for Debug
+                if (IsProtocolV3(pindexPrev->nHeight + 1))
+                {
+                    int iWinerAge = 0;
+                    unsigned int iWinerAgeU = 0;
+                    uint256 iWinerAge256 = 0;
+                    int iMidMNCount = 0;
+                    iWinerAge256 = winningNode->CalculateScore();
+                    memcpy(&iWinerAgeU, &iWinerAge256, 4);
+                    iWinerAge = (iWinerAgeU >> 20);
+                    iMidMNCount = GetMidMasternodes();
+                    if (iWinerAge > (iMidMNCount*0.6))
+                    {
+                        payee = GetScriptForDestination(winningNode->pubkey.GetID());
+                    }
+                    else
+                    {
+                        masternodePayment = GetMasternodePaymentSmall(pindexPrev->nHeight + 1, nFees);
+                        payee = GetScriptForDestination(winningNode->pubkey.GetID());
+                    }
+                }
+                else
+                {
+                    payee = GetScriptForDestination(winningNode->pubkey.GetID());
+                }
             } else {
                 return error("CreateCoinStake: Failed to detect masternode to pay\n");
             }
         }
     }
+
     // If reward percent is 0 then send all to masternode address
-    if(hasPayment && payeerewardpercent == 0){
+    if(payeerewardpercent == 0){
         payments = txNew.vout.size() + 1;
         txNew.vout.resize(payments);
 
@@ -3547,7 +3579,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     }
 
     // If reward percent is 100 then send all to reward address
-    if(hasPayment && payeerewardpercent == 100){
+    if(payeerewardpercent == 100){
         payments = txNew.vout.size() + 1;
         txNew.vout.resize(payments);
 
@@ -3562,7 +3594,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     }
 
     // If reward percent more than 0 and lower than 100 then split reward
-    if(hasPayment && payeerewardpercent > 0 && payeerewardpercent < 100){
+    if(payeerewardpercent > 0 && payeerewardpercent < 100){
         payments = txNew.vout.size() + 2;
         txNew.vout.resize(payments);
 
@@ -3584,23 +3616,22 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     }
     
     int64_t blockValue = nCredit;
-    int64_t masternodePayment = GetMasternodePayment(pindexPrev->nHeight+1, nReward);
 
     // Set output amount
-    if(hasPayment && txNew.vout.size() == 4 && (payeerewardpercent == 0 || payeerewardpercent == 100)) // 2 stake outputs, stake was split, plus a masternode payment, no reward split
+    if(txNew.vout.size() == 4 && (payeerewardpercent == 0 || payeerewardpercent == 100)) // 2 stake outputs, stake was split, plus a masternode payment, no reward split
     {
         txNew.vout[payments-1].nValue = masternodePayment;
         blockValue -= masternodePayment;
         txNew.vout[1].nValue = (blockValue / 2 / CENT) * CENT;
         txNew.vout[2].nValue = blockValue - txNew.vout[1].nValue;
     }
-    else if(hasPayment && txNew.vout.size() == 3 && (payeerewardpercent == 0 || payeerewardpercent == 100)) // only 1 stake output, was not split, plus a masternode payment, no reward split
+    else if(txNew.vout.size() == 3 && (payeerewardpercent == 0 || payeerewardpercent == 100)) // only 1 stake output, was not split, plus a masternode payment, no reward split
     {
         txNew.vout[payments-1].nValue = masternodePayment;
         blockValue -= masternodePayment;
         txNew.vout[1].nValue = blockValue;
     }
-    else if(hasPayment && txNew.vout.size() == 5 && payeerewardpercent > 0 && payeerewardpercent < 100) // 2 stake outputs, stake was split, plus a masternode payment
+    else if(txNew.vout.size() == 5 && payeerewardpercent > 0 && payeerewardpercent < 100) // 2 stake outputs, stake was split, plus a masternode payment
     {
         txNew.vout[payments-2].nValue = (masternodePayment / 100) * (100 - payeerewardpercent);
         txNew.vout[payments-1].nValue = masternodePayment - txNew.vout[payments-2].nValue;
@@ -3608,7 +3639,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         txNew.vout[1].nValue = (blockValue / 2 / CENT) * CENT;
         txNew.vout[2].nValue = blockValue - txNew.vout[1].nValue;
     }
-    else if(hasPayment && txNew.vout.size() == 4 && payeerewardpercent > 0 && payeerewardpercent < 100) // only 1 stake output, was not split, plus a masternode payment
+    else if(txNew.vout.size() == 4 && payeerewardpercent > 0 && payeerewardpercent < 100) // only 1 stake output, was not split, plus a masternode payment
     {
         txNew.vout[payments-2].nValue = (masternodePayment / 100) * (100 - payeerewardpercent);
         txNew.vout[payments-1].nValue = masternodePayment - txNew.vout[payments-2].nValue;

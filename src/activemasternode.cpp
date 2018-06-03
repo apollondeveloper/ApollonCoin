@@ -474,6 +474,7 @@ bool CActiveMasternode::EnableHotColdMasterNode(CTxIn& newVin, CService& newServ
     if(!fMasterNode) return false;
 
     status = MASTERNODE_REMOTELY_ENABLED;
+    notCapableReason = "Masternode started remotely";
 
     //The values below are needed for signing dseep messages going forward
     this->vin = newVin;

@@ -34,17 +34,43 @@ git clone git@github.com:rat4/Apollon.git Apollon
 2a. (for 10.7 Lion)
     Edit /opt/local/etc/macports/macports.conf and uncomment "build_arch i386"
 
-3.  Install dependencies from MacPorts
+3.  Install dependencies
 
-sudo port install boost db48 openssl miniupnpc
+brew install llvm --with-toolchain --with-clang
+
+brew install libtool leveldb db48 openssl miniupnpc
+
+brew install homebrew/core/boost159
+brew link boost@1.59 --force
+
+brew install berkeley-db4
+brew link berkeley-db4 --force
 
 Optionally install qrencode (and set USE_QRCODE=1):
-sudo port install qrencode
+brew install qrencode
 
 4.  Now you should be able to build Apollond:
 
 cd Apollon/src
 make -f makefile.osx
+
+---------
+
+5. Error handling - Only if issue occurs:
+
+5.1. Undefined symbols for architecture x86_64:
+
+cd Apollon/src/secp256k1
+follow the build instructions from the README.md!
+
+You may also try:
+./configure --enable-module-recovery
+
+5.2. Rebuild leveldb:
+
+cd Apollon/src/libleveldb
+TARGET_OS=IOS make libleveldb.a libmemenv.a
+
 
 Run:
   ./Apollond --help  # for a list of command-line options.
