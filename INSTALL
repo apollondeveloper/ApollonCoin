@@ -7,3 +7,11 @@ implementation of Apollon.
 See doc/build-*.txt for instructions on building Apollond,
 the intended-for-services, no-graphical-interface, reference
 implementation of Apollon.
+
+If everything is setup properly, execute:
+
+qmake "USE_UPNP=-" Apollon.pro
+
+and then
+
+make -j 2 -f Makefile
