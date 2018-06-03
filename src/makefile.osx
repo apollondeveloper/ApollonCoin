@@ -6,23 +6,26 @@
 # Mac OS X makefile for Apollon
 # Originally by Laszlo Hanyecz (solar@heliacal.net)
 
-CXX=clang++
-C=clang
+CXX=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++
+C=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang
 DEPSDIR=/usr/local
+BOOST_VERSION=1.59.0
+BERKLEY_VERSION=4.8.30
+OPENSSL_VERSION=1.0.2o_1
 
 INCLUDEPATHS= \
  -I"$(CURDIR)" \
  -I"$(CURDIR)"/obj \
  -I"$(DEPSDIR)/include" \
- -I"$(DEPSDIR)/Cellar/boost/1.59.0/include" \
- -I"$(DEPSDIR)/Cellar/berkeley-db4/4.8.30/include" \
- -I"$(DEPSDIR)/openssl-1.0.1p/include"
+ -I"$(DEPSDIR)/Cellar/boost@1.59/$(BOOST_VERSION)/include" \
+ -I"$(DEPSDIR)/Cellar/berkeley-db@4/$(BERKLEY_VERSION)/include" \
+ -I"$(DEPSDIR)/Cellar/openssl/$(OPENSSL_VERSION)/include"
 
 LIBPATHS= \
  -L"$(DEPSDIR)/lib" \
- -L"$(DEPSDIR)/Cellar/boost/1.59.0/lib" \
- -L"$(DEPSDIR)/Cellar/berkeley-db4/4.8.30/lib" \
- -L"$(DEPSDIR)/openssl-1.0.1p/lib"
+ -L"$(DEPSDIR)/Cellar/boost@1.59/$(BOOST_VERSION)/lib" \
+ -L"$(DEPSDIR)/Cellar/berkeley-db@4/$(BERKLEY_VERSION)/lib" \
+ -L"$(DEPSDIR)/Cellar/openssl/$(OPENSSL_VERSION)/lib"
 
 USE_UPNP:=1
 USE_WALLET:=1
@@ -59,7 +62,7 @@ ifdef RELEASE
 # Compile for maximum compatibility and smallest size.
 # This requires that dependencies are compiled
 # the same way.
-CFLAGS = -mmacosx-version-min=10.8 -arch x86_64 -O3
+CFLAGS = -mmacosx-version-min=10.8 -arch i386 -arch x86_64 -O3
 else
 DEBUGFLAGS = -g
 endif
