@@ -6,8 +6,8 @@
 # Mac OS X makefile for Apollon
 # Originally by Laszlo Hanyecz (solar@heliacal.net)
 
-CXX=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++
-C=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang
+CXX=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/g++
+C=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/gcc
 DEPSDIR=/usr/local
 BOOST_VERSION=1.59.0
 BERKLEY_VERSION=4.8.30

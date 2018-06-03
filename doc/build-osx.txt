@@ -61,8 +61,12 @@ make -f makefile.osx
 5.1. Undefined symbols for architecture x86_64:
 
 cd Apollon/src/secp256k1
-
 follow the build instructions from the README.md!
+
+5.2. Rebuild libleveldb:
+
+cd Apollon/src/libleveldb
+TARGET_OS=IOS make libleveldb.a libmemenv.a
 
 
 Run:
