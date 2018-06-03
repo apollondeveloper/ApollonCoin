@@ -63,7 +63,10 @@ make -f makefile.osx
 cd Apollon/src/secp256k1
 follow the build instructions from the README.md!
 
-5.2. Rebuild libleveldb:
+You may also try:
+./configure --enable-module-recovery
+
+5.2. Rebuild leveldb:
 
 cd Apollon/src/libleveldb
 TARGET_OS=IOS make libleveldb.a libmemenv.a
