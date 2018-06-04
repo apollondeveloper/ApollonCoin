@@ -10,8 +10,17 @@ implementation of Apollon.
 
 If everything is setup properly, execute:
 
-qmake "USE_UPNP=-" Apollon.pro
+## Mac Builds:
+---------
+# prepare makefile
+qmake "USE_UPNP=-"
 
-and then
+# Check if the files are executable and if not set them as followed:
+chmod 777 share/genbuild.sh
+chmod 777 src/leveldb/build_detect_platform
 
-make -j 2 -f Makefile
+# run build
+make -j6
+
+# finally call 
+macdeployqt Apollon-Qt.app

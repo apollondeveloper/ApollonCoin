@@ -15,7 +15,16 @@ greaterThan(QT_MAJOR_VERSION, 4) {
     QT += widgets
     DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0
 }
-
+macx {
+    BOOST_INCLUDE_PATH=/usr/local/Cellar/boost@1.60/1.60.0/include
+    BOOST_LIB_PATH=/usr/local/Cellar/boost@1.60/1.60.0/lib
+    BDB_INCLUDE_PATH=/usr/local/Cellar/berkeley-db@4/4.8.30/include
+    BDB_LIB_PATH=/usr/local/Cellar/berkeley-db@4/4.8.30/lib
+    OPENSSL_INCLUDE_PATH=/usr/local/Cellar/openssl/1.0.2o_1/include
+    OPENSSL_LIB_PATH=/usr/local/Cellar/openssl/1.0.2o_1/lib
+    MINIUPNPC_INCLUDE_PATH=/usr/local/Cellar/miniupnpc/2.1/include
+    MINIUPNPC_LIB_PATH=/usr/local/Cellar/miniupnpc/2.1/lib
+}
 # for boost 1.37, add -mt to the boost libraries
 # use: qmake BOOST_LIB_SUFFIX=-mt
 # for boost thread win32 with _win32 sufix
