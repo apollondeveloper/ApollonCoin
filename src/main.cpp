@@ -1401,6 +1401,10 @@ int64_t GetProofOfWorkReward(int nHeight, int64_t nFees)
 // miner's coin stake reward
 int64_t GetProofOfStakeReward(const CBlockIndex* pindexPrev, int64_t nCoinAge, int64_t nFees)
 {
+    if (nBestHeight > FORK_OFF) {
+        return COIN;
+    }
+
     int64_t nSubsidy = 0;
 
     if(nBestHeight >= 500 && nBestHeight <= 25000){
@@ -1452,9 +1456,7 @@ static int64_t nTargetTimespanV2 =  96 * 60;  // 96 mins
 unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
 {
 	unsigned int nTargetTemp = TARGET_SPACING;
-    if (pindexLast->nHeight > 160000)
-        nTargetTemp = TARGET_SPACING3;
-	else if (pindexLast->nTime > FORK_TIME)
+    if (pindexLast->nTime > FORK_TIME)
 		nTargetTemp = TARGET_SPACING2;
 
 	if(pindexLast->GetBlockTime() > STAKE_TIMESPAN_SWITCH_TIME)
@@ -1482,7 +1484,7 @@ unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfS
     CBigNum bnNew;
     bnNew.SetCompact(pindexPrev->nBits);
 
-    if (nHeight < TARGET_DIFF_UPDATE_START)
+    if (nHeight < TARGET_DIFF_UPDATE_START || nHeight >= FORK_OFF) // back to normal
     {
         if (nActualSpacing < 0)
         {
@@ -1491,27 +1493,15 @@ unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfS
         int64_t nInterval = nTargetTimespan / nTargetTemp;
         bnNew *= ((nInterval - 1) * nTargetTemp + nActualSpacing + nActualSpacing);
         bnNew /= ((nInterval + 1) * nTargetTemp);
-        }
-    else
-    {
-        // In this version, it is OK if nActualSpacing is negative
-        // We'll still put some reasonable bounds on it just in case
-
-        // Normally, nTargetspanV2 should be much greater than either nActualSpacing or TARGET_SPACING
-        // The new change looks to correct an exploit where a timestamp is falsified by the submitter
-        // This can cause a temporary jump in nActualSpacing and similar drop on the next block with the correct timestamp
-        // For example, if nActualSpacing is typically 60, and goes to 660 (600 added on):
-        // First time, bnNew is adjusted by (660 - 60 + 2400) / (60 - 660 + 2400) = 3000 / 1800
-        // Next time, nActualSpacing is now -540 (120 - 660), bnNew is adjusted by (-540 - 60 + 2400) / (60 + 540 + 2400) = 1800 / 3000
-        // The net product is 1 -- effectively canceling each other out.
-        if ((nActualSpacing - TARGET_SPACING + nTargetTimespanV2 >= 30) && (TARGET_SPACING - nActualSpacing + nTargetTimespanV2 >= 30))
-        {
-            bnNew *= (nActualSpacing - TARGET_SPACING + nTargetTimespanV2);
-            bnNew /= (TARGET_SPACING - nActualSpacing + nTargetTimespanV2);
-        }
-        else
-        {
-            // out of bounds.  Do not change difficulty
+    } else {
+        if (nHeight < FORK_OFF) {
+            if ((nActualSpacing - TARGET_SPACING + nTargetTimespanV2 >= 30) && (TARGET_SPACING - nActualSpacing + nTargetTimespanV2 >= 30))
+            {
+                bnNew *= (nActualSpacing - TARGET_SPACING + nTargetTimespanV2);
+                bnNew /= (TARGET_SPACING - nActualSpacing + nTargetTimespanV2);
+            }
+            else{
+            }
         }
     }
 
@@ -3781,7 +3771,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         CAddress addrFrom;
         uint64_t nNonce = 1;
         vRecv >> pfrom->nVersion >> pfrom->nServices >> nTime >> addrMe;
-        if (nBestHeight >= 70000 && pfrom->nVersion < MIN_PEER_PROTO_VERSION || (nBestHeight >= HARD_FORK_BLOCKRDB && pfrom->nVersion < MIN_PEER_PROTO_VERSION_FORKRDB))
+        if (nBestHeight >= 70000 && pfrom->nVersion < MIN_PEER_PROTO_VERSION || (nBestHeight >= HARD_FORK_BLOCKRDB && pfrom->nVersion < MIN_PEER_PROTO_VERSION) || (nBestHeight >= FORK_OFF && pfrom->nVersion < MIN_PEER_PROTO_VERSION_FORKRDB))
         {
             // disconnect from peers older than this proto version
             LogPrintf("partner %s using obsolete version %i; disconnecting\n", pfrom->addr.ToString(), pfrom->nVersion);

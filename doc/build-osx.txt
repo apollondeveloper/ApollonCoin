@@ -40,8 +40,8 @@ brew install llvm --with-toolchain --with-clang
 
 brew install libtool leveldb db48 openssl miniupnpc
 
-brew install homebrew/core/boost159
-brew link boost@1.59 --force
+brew install homebrew/core/boost160
+brew link boost@1.60 --force
 
 brew install berkeley-db4
 brew link berkeley-db4 --force

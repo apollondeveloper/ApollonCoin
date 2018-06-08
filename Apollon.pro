@@ -15,7 +15,16 @@ greaterThan(QT_MAJOR_VERSION, 4) {
     QT += widgets
     DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0
 }
-
+macx {
+    BOOST_INCLUDE_PATH=/usr/local/Cellar/boost@1.60/1.60.0/include
+    BOOST_LIB_PATH=/usr/local/Cellar/boost@1.60/1.60.0/lib
+    BDB_INCLUDE_PATH=/usr/local/Cellar/berkeley-db@4/4.8.30/include
+    BDB_LIB_PATH=/usr/local/Cellar/berkeley-db@4/4.8.30/lib
+    OPENSSL_INCLUDE_PATH=/usr/local/Cellar/openssl/1.0.2o_1/include
+    OPENSSL_LIB_PATH=/usr/local/Cellar/openssl/1.0.2o_1/lib
+    MINIUPNPC_INCLUDE_PATH=/usr/local/Cellar/miniupnpc/2.1/include
+    MINIUPNPC_LIB_PATH=/usr/local/Cellar/miniupnpc/2.1/lib
+}
 # for boost 1.37, add -mt to the boost libraries
 # use: qmake BOOST_LIB_SUFFIX=-mt
 # for boost thread win32 with _win32 sufix
@@ -511,12 +520,12 @@ isEmpty(BDB_INCLUDE_PATH) {
 }
 
 isEmpty(BOOST_LIB_PATH) {
-    macx:BOOST_LIB_PATH = /usr/local/Cellar/boost@1.59/1.59.0/lib
+    macx:BOOST_LIB_PATH = /usr/local/Cellar/boost@1.60/1.60.0/lib
     windows:BOOST_LIB_PATH=C:/dev/coindeps32/boost_1_57_0/lib
 }
 
 isEmpty(BOOST_INCLUDE_PATH) {
-    macx:BOOST_INCLUDE_PATH = /usr/local/Cellar/boost@1.59/1.59.0/include
+    macx:BOOST_INCLUDE_PATH = /usr/local/Cellar/boost@1.60/1.60.0/include
     windows:BOOST_INCLUDE_PATH=C:/dev/coindeps32/boost_1_57_0/include
 }
 
@@ -599,7 +608,7 @@ INCLUDEPATH += $$BOOST_INCLUDE_PATH $$BDB_INCLUDE_PATH $$OPENSSL_INCLUDE_PATH $$
 LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) $$join(OPENSSL_LIB_PATH,,-L,) $$join(QRENCODE_LIB_PATH,,-L,)
 LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX
 # -lgdi32 has to happen after -lcrypto (see  #681)
-windows:LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
+windows:LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32 -pthread
 !windows: {
     LIBS += -lgmp
 } else {
